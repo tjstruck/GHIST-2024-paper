@@ -101,3 +101,11 @@ mts.num_mutations
 vcf_fi = open(f"{challenge_name}/{challenge_name}{less}.vcf","w")
 vcf_fi.write(mts.as_vcf())
 vcf_fi.close()
+
+fi = open(f"{challenge_name}/{challenge_name}.popfile","w")
+
+for i in range(1,ns['mainland']+1):
+    fi.write(f"mainland_{i}\tmainland\n")
+for ii in range(1, ns['island']+1):
+    fi.write(f"island_{ii}\tisland\n")
+fi.close()

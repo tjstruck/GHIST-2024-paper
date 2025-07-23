@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###SBATCH --job-name=hpc_msprime
-#SBATCH --job-name=sim-split-iso
+#SBATCH --job-name=sim-bottleneck
 #SBATCH --output=hpc_output/%x-%A.out
 #SBATCH --account=rgutenk
 #SBATCH --qos=user_qos_rgutenk
@@ -10,13 +10,13 @@
 ###SBATCH --partition=windfall
 #SBATCH --partition=high_priority
 #SBATCH --nodes=1
-#SBATCH --ntasks=40
+#SBATCH --ntasks=10
 #SBATCH --cpus-per-task=1
 ###SBATCH --mem-per-cpu=5gb
 ###SBATCH --constraint=hi_mem
 ###SBATCH --mem-per-cpu=32gb
-#SBATCH --time=72:00:00
-###SBATCH --array=1-4
+#SBATCH --time=1:00:00
+###SBATCH --array=1-50
 
 import dadi
 import msprime
@@ -36,37 +36,41 @@ process_ii = int(os.environ.get('SLURM_ARRAY_TASK_ID',1))-1
 print(process_ii)
 
 
-challenge_name = "GHIST-split-isolation"
+challenge_name = "GHIST-bottleneck"
 os.makedirs(challenge_name, exist_ok=True)
 
-def msprime_split_isolation(Na, p):
-    (nu1, nu2, T) = p
-    dem = msprime.Demography()
-    dem.add_population(name="ancestral", initial_size=Na)
-    dem.add_population(name="east", initial_size=Na*nu1)
-    dem.add_population(name="west", initial_size=Na*nu2)
-    dem.add_population_split(time=T, derived=["east", "west"], ancestral="ancestral")
+seq_l = "1e8"
 
+# if seq_l != "1e8":
+seq_tag = "."+seq_l
+# else:
+seq_tag = ''
+
+def msprime_wisent_bottleneck(Na, p):
+    (nu, T) = p
+    dem = msprime.Demography()
+    dem.add_population(name="wisent", initial_size=Na*nu)
+    dem.add_population(name="ancestral", initial_size=Na)
+    dem.add_population_split(time=2*Na*T, derived=["wisent"], ancestral="ancestral")
     return dem
 
-Na = 100000 # ancestral pop size
+nu = 0.08
+T = 0.01
 
-nu1 = 1.3
-nu2 = 0.2#random.random()*10
-T = 13333
-p = (nu1, nu2, T)
+p = (nu, T)
 
-
-ns = {"east":22, "west":18} # individuals
+Na = 14182
+ns = {"wisent":20} # individuals
 ploidy = 2 # diploid
-# based on https://github.com/popsim-consortium/stdpopsim/blob/main/stdpopsim/catalog/MusMus/species.py
-mut = 5.7e-9 # mutation rate
-# mean recomb from stdpopsim
-recomb = 5.386e-09
+mut = 1.26e-8 # mutation rate
+
+# 1e-8 recombination per base seems roughtly right 0.0099±0.0052 and 0.0088±0.0053 per 1MB in two species of cattle
+recomb = 1.007e-08
 # msprime demography model with dadi parameters
-dem = msprime_split_isolation(Na, p)
+dem = msprime_wisent_bottleneck(Na, p)
 dem.sort_events()
 
+os.makedirs(f"{challenge_name}", exist_ok=True)
 
 ts = msprime.sim_ancestry(
     samples=ns, 
@@ -76,11 +80,15 @@ ts = msprime.sim_ancestry(
     ploidy=ploidy,
     random_seed=12
     )
-ts
 
 mts = msprime.sim_mutations(ts, rate=mut, discrete_genome=False, random_seed=5566)
 mts.num_mutations
 
-vcf_fi = open(f"{challenge_name}/{challenge_name}.vcf","w")
+vcf_fi = open(f"{challenge_name}{seq_tag}/{challenge_name}.vcf","w")
 vcf_fi.write(mts.as_vcf())
 vcf_fi.close()
+
+fi = open(f"{challenge_name}/{challenge_name}.popfile","w")
+for i in range(1,21):
+    fi.write(f"wisent_{i}\twisent\n")
+fi.close()

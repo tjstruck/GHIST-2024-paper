@@ -142,3 +142,28 @@ mts = msprime.sim_mutations(ts, rate=mut, discrete_genome=False, random_seed=556
 vcf_fi = open(f"{challenge_name}/{challenge_name}.vcf","w")
 vcf_fi.write(mts.as_vcf())
 vcf_fi.close()
+
+fi = open(f"{challenge_name}/{challenge_name}.popfile","w")
+
+for i in range(1,ns['Modern_pop1']+1):
+    fi.write(f"Modern1.{i}\tModern1\n")
+
+for i in range(1,ns['Modern_pop2']+1):
+    fi.write(f"Modern2.{i}\tModern2\n")
+
+for i in range(1,ns['AncOut1']+1):
+    fi.write(f"AncSite1.{i}\tAnc1\n")
+
+for i in range(1,ns['AncOut2']+1):
+    fi.write(f"AncSite2.{i}\tAnc2\n")
+
+for i in range(1,ns['AncPop1']+1):
+    fi.write(f"AncSite3.{i}\tAnc3\n")
+
+for i in range(1,ns['AncOut3']+1):
+    fi.write(f"AncSite4.{i}\tAnc4\n")
+
+for i in range(1,ns['AncPop2']+1):
+    fi.write(f"AncSite5.{i}\tAnc5\n")
+
+fi.close()
